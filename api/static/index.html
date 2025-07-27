@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        label, select, textarea, input { display: block; margin: 1em 0; }
+        #result { margin-top: 2em; padding: 1em; border: 1px solid #ccc; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h1>MCP Server Task Runner</h1>
+    <form id="taskForm">
+        <label for="task">Select Task:</label>
+        <select id="task" name="task" required>
+            <option value="summarize">Summarize</option>
+            <option value="sentiment">Sentiment</option>
+            <option value="keywords">Keywords</option>
+        </select>
+
+        <label for="text">Input Text:</label>
+        <textarea id="text" name="text" rows="6" cols="60" required></textarea>
+
+        <label for="file">Or Upload a Text File:</label>
+        <input type="file" id="file" accept=".txt">
+
+        <button type="submit">Submit</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+    document.getElementById('file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById('text').value = evt.target.result;
+            };
+            reader.readAsText(file);
+        }
+    });
+
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const task = document.getElementById('task').value;
+        const text = document.getElementById('text').value;
+        const resultDiv = document.getElementById('result');
+        resultDiv.textContent = 'Processing...';
+        try {
+            const response = await fetch('/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task, text })
+            });
+            const data = await response.json();
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+            resultDiv.textContent = 'Error: ' + err;
+        }
+    });
+    </script>
+</body>
+</html> 
