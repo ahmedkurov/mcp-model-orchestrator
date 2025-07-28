@@ -3,32 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Server Frontend</title>
+    <title>MCP Model Orchestrator</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
-        label, select, textarea, input { display: block; margin: 1em 0; }
-        #result { margin-top: 2em; padding: 1em; border: 1px solid #ccc; background: #f9f9f9; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2em;
+        }
+        header {
+            background: #fff;
+            padding: 1.5em 0;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: center;
+            margin-bottom: 2em;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.2em;
+            color: #007bff;
+            font-weight: 500;
+        }
+        main {
+            background: #fff;
+            padding: 2.5em;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: .8em;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        select, textarea, button {
+            padding: 0.8em;
+            margin-bottom: 1.5em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            box-sizing: border-box; /* To make sure padding doesn't affect width */
+        }
+        textarea {
+            resize: vertical;
+            min-height: 180px;
+            font-family: inherit;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 2em;
+            padding: 1.5em;
+            border: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: "Courier New", Courier, monospace;
+            min-height: 50px;
+        }
+        .file-upload-container {
+            text-align: center;
+            margin-bottom: 1.5em;
+        }
+        .file-upload-label {
+            display: inline-block;
+            padding: 0.8em 1.5em;
+            cursor: pointer;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .file-upload-label:hover {
+            background-color: #5a6268;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        #file-name {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+        footer {
+            text-align: center;
+            margin-top: 3em;
+            padding-top: 1.5em;
+            border-top: 1px solid #e0e0e0;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
-    <h1>MCP Server Task Runner</h1>
-    <form id="taskForm">
-        <label for="task">Select Task:</label>
-        <select id="task" name="task" required>
-            <option value="summarize">Summarize</option>
-            <option value="sentiment">Sentiment</option>
-            <option value="keywords">Keywords</option>
-        </select>
+    <header>
+        <h1>MCP Model Orchestrator</h1>
+    </header>
+    <div class="container">
+        <main>
+            <form id="taskForm">
+                <label for="task">1. Select a Task</label>
+                <select id="task" name="task" required>
+                    <option value="summarize">Summarization</option>
+                    <option value="sentiment">Sentiment Analysis</option>
+                    <option value="keywords">Keyword Extraction</option>
+                </select>
 
-        <label for="text">Input Text:</label>
-        <textarea id="text" name="text" rows="6" cols="60" required></textarea>
+                <label for="text">2. Provide Input Text</label>
+                <textarea id="text" name="text" placeholder="Enter text here..." required></textarea>
 
-        <label for="file">Or Upload a Text File:</label>
-        <input type="file" id="file" accept=".txt">
+                <div class="file-upload-container">
+                    <label for="file" class="file-upload-label">Or Upload a Text File</label>
+                    <input type="file" id="file" accept=".txt">
+                    <div id="file-name"></div>
+                </div>
 
-        <button type="submit">Submit</button>
-    </form>
-    <div id="result"></div>
+                <button type="submit">Process Task</button>
+            </form>
+            <div id="result">Your results will appear here...</div>
+        </main>
+    </div>
+    <footer>
+        <p>&copy; 2024 MCP Model Orchestrator. All rights reserved.</p>
+    </footer>
 
     <script>
     document.getElementById('file').addEventListener('change', function(e) {
@@ -39,6 +155,7 @@
                 document.getElementById('text').value = evt.target.result;
             };
             reader.readAsText(file);
+            document.getElementById('file-name').textContent = `File selected: ${file.name}`;
         }
     });
 
@@ -47,19 +164,30 @@
         const task = document.getElementById('task').value;
         const text = document.getElementById('text').value;
         const resultDiv = document.getElementById('result');
+        const submitButton = this.querySelector('button');
+
         resultDiv.textContent = 'Processing...';
+        submitButton.disabled = true;
+        submitButton.style.backgroundColor = '#0056b3';
+
         try {
             const response = await fetch('/process', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ task, text })
             });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
             resultDiv.textContent = JSON.stringify(data, null, 2);
         } catch (err) {
-            resultDiv.textContent = 'Error: ' + err;
+            resultDiv.textContent = 'Error: ' + err.message;
+        } finally {
+            submitButton.disabled = false;
+            submitButton.style.backgroundColor = '#007bff';
         }
     });
     </script>
 </body>
-</html> 
+</html>
